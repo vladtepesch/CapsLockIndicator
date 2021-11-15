@@ -521,14 +521,14 @@ namespace CapsLockIndicatorV3
         {
             var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            CapsOff = File.Exists(Path.Combine(dir, "caps0.ico")) ? Icon.ExtractAssociatedIcon(Path.Combine(dir, "caps0.ico")) : (Icon)resources.GetObject("CLIv3_Caps_Off");
-            CapsOn = File.Exists(Path.Combine(dir, "caps1.ico")) ? Icon.ExtractAssociatedIcon(Path.Combine(dir, "caps1.ico")) : (Icon)resources.GetObject("CLIv3_Caps_On");
+            CapsOff = File.Exists(Path.Combine(dir, "caps0.ico")) ? new Icon(Path.Combine(dir, "caps0.ico")) : (Icon)resources.GetObject("CLIv3_Caps_Off");
+            CapsOn = File.Exists(Path.Combine(dir, "caps1.ico")) ? new Icon(Path.Combine(dir, "caps1.ico")) : (Icon)resources.GetObject("CLIv3_Caps_On");
 
-            NumOff = File.Exists(Path.Combine(dir, "num0.ico")) ? Icon.ExtractAssociatedIcon(Path.Combine(dir, "num0.ico")) : (Icon)resources.GetObject("CLIv3_Num_Off");
-            NumOn = File.Exists(Path.Combine(dir, "num1.ico")) ? Icon.ExtractAssociatedIcon(Path.Combine(dir, "num1.ico")) : (Icon)resources.GetObject("CLIv3_Num_On");
+            NumOff = File.Exists(Path.Combine(dir, "num0.ico")) ? new Icon(Path.Combine(dir, "num0.ico")) : (Icon)resources.GetObject("CLIv3_Num_Off");
+            NumOn = File.Exists(Path.Combine(dir, "num1.ico")) ? new Icon(Path.Combine(dir, "num1.ico")) : (Icon)resources.GetObject("CLIv3_Num_On");
 
-            ScrollOff = File.Exists(Path.Combine(dir, "scroll0.ico")) ? Icon.ExtractAssociatedIcon(Path.Combine(dir, "scroll0.ico")) : (Icon)resources.GetObject("CLIv3_Scroll_Off");
-            ScrollOn = File.Exists(Path.Combine(dir, "scroll1.ico")) ? Icon.ExtractAssociatedIcon(Path.Combine(dir, "scroll1.ico")) : (Icon)resources.GetObject("CLIv3_Scroll_On");
+            ScrollOff = File.Exists(Path.Combine(dir, "scroll0.ico")) ? new Icon(Path.Combine(dir, "scroll0.ico")) : (Icon)resources.GetObject("CLIv3_Scroll_Off");
+            ScrollOn = File.Exists(Path.Combine(dir, "scroll1.ico")) ? new Icon(Path.Combine(dir, "scroll1.ico")) : (Icon)resources.GetObject("CLIv3_Scroll_On");
 
             if (isUserInitiated)
                 ShowOverlayInfo(strings.reloadedIconsInfo);
@@ -649,24 +649,57 @@ namespace CapsLockIndicatorV3
             ApplyEOLStrings();
         }
 
+        public Icon mergeIcons(Icon icon1, Icon icon2, Icon icon3)
+        {
+            Image a = icon1.ToBitmap();
+            Image b = icon2.ToBitmap();
+            Image c = icon3.ToBitmap();
+            Bitmap bitmap = new Bitmap( icon1.Size.Width, icon1.Size.Height);
+            Graphics canvas = Graphics.FromImage(bitmap);
+            canvas.DrawImage(a, new Point(0, 0));
+            canvas.DrawImage(b, new Point(0, 0));
+            canvas.DrawImage(c, new Point(0, 0));
+            canvas.Save();
+            return Icon.FromHandle(bitmap.GetHicon());
+        }
+
         // This timer ticks approx. 60 times a second (overkill?)
         void UpdateTimerTick(object sender, EventArgs e)
         {
-            // Set the icons for the NotifyIcons depending on the key state
-            if (enableNumIcon.Checked && !showNoIcons.Checked)
-                numLockIcon.Icon = KeyHelper.isNumlockActive ? NumOn : NumOff;
-            else
-                numLockIcon.Icon = null;
+            if (false) // insert option here
+            {
+                // Set the icons for the NotifyIcons depending on the key state
+                if (enableNumIcon.Checked && !showNoIcons.Checked)
+                    numLockIcon.Icon = KeyHelper.isNumlockActive ? NumOn : NumOff;
+                else
+                    numLockIcon.Icon = null;
 
-            if (enableCapsIcon.Checked && !showNoIcons.Checked)
-                capsLockIcon.Icon = KeyHelper.isCapslockActive ? CapsOn : CapsOff;
-            else
-                capsLockIcon.Icon = null;
+                if (enableCapsIcon.Checked && !showNoIcons.Checked)
+                    capsLockIcon.Icon = KeyHelper.isCapslockActive ? CapsOn : CapsOff;
+                else
+                    capsLockIcon.Icon = null;
 
-            if (enableScrollIcon.Checked && !showNoIcons.Checked)
-                scrollLockIcon.Icon = KeyHelper.isScrolllockActive ? ScrollOn : ScrollOff;
-            else
-                scrollLockIcon.Icon = null;
+                if (enableScrollIcon.Checked && !showNoIcons.Checked)
+                    scrollLockIcon.Icon = KeyHelper.isScrolllockActive ? ScrollOn : ScrollOff;
+                else
+                    scrollLockIcon.Icon = null;
+            } else
+            {
+                if (   (KeyHelper.isCapslockActive != capsState)
+                    || (KeyHelper.isScrolllockActive != scrollState)
+                    || (KeyHelper.isNumlockActive != numState)
+                    || (capsLockIcon.Icon == null))
+                {
+                    Icon ic = mergeIcons(KeyHelper.isNumlockActive ? NumOn : NumOff,
+                                         KeyHelper.isCapslockActive ? CapsOn : CapsOff,
+                                         KeyHelper.isScrolllockActive ? ScrollOn : ScrollOff);
+                    capsLockIcon.Icon = ic;
+                    numLockIcon.Icon = null;
+                    scrollLockIcon.Icon = null;
+                }
+            }
+
+
 
             generalIcon.Visible =
                 !(enableNumIcon.Checked && !showNoIcons.Checked) &&
